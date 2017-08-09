@@ -6,29 +6,63 @@ class App extends Component {
 
   constructor(props) {
     super(props);
+    this.state = {
+      item: 'Shiny Moonstone',
+      tips: 0.2,
+      shipping: 9999.99,
+      amount: 2.99
+    };
     this.handlePaymentAction = this.handlePaymentAction.bind(this);
   }
 
   handlePaymentAction() {
     if (window.PaymentRequest) {
-      // A couple of example payment networks (others exist too!)
-      var methodData = [{supportedMethods: ['visa', 'mastercard']}];
-      var details = { total: 
-        { label: 'Something that costs money', 
-          amount: {currency: 'EUR', value: '799.74'} }};
-      // Show a native Payment Request UI and handle the result
-      var request = new PaymentRequest(methodData, details)
+      // Price calculation will be not handled from the payment api
+      const tipAmount = (this.state.amount + this.state.shipping) * this.state.tips;
+      const totalAmount = tipAmount + this.state.shipping + this.state.amount;
+
+      // A couple of example payment networks
+      const methodData = [{ 
+        supportedMethods: ['visa', 'discover']
+      }];
+      // Purchase details
+      const details = { 
+        displayItems: [{
+          label: `${this.state.item} (in a box with giftcard)`,
+          amount: { currency: 'EUR', value: this.state.amount }
+        }, {
+          label: '20% tips and Shipping',
+          amount: { currency: 'EUR', value:  (this.state.shipping + tipAmount).toFixed(2) }
+        }],
+        total: { 
+          label: 'Grand total', 
+          amount: { currency: 'EUR', value: totalAmount.toFixed(2) } 
+        },
+        shippingOptions: [{
+          id: 'spaceShip',
+          label: 'Space-Ship special delivery',
+          amount: { currency: 'EUR', value: this.state.shipping.toFixed(2) } ,
+          seleceted: true
+        }]
+      };
+      // Options
+      const options = { requestShipping: true };
+
+      const request = new PaymentRequest(methodData, details, options)
       request
+        // Show a native Payment Request UI and handle the result
         .show()
-        .then(function(uiResult) {
-          // processPayment(uiResult);
+        // Process the payment and let the ui respond to it
+        .then(function(paymentInfo) {
+          setTimeout(() => console.log(paymentInfo), 1000)
+          return Promise.resolve();
         })
         .catch(function(error) {
-          // handlePaymentError(error);
+          console.error(error);
         });
     } else {
-      console.error('PaymentRequest no supported');
-      // Alas! Use your legacy checkout form...
+      // Use your legacy checkout form...
+      console.info('Use your legacy checkout form...');
     }
   }
 
@@ -38,10 +72,10 @@ class App extends Component {
         <div className="App-header">
           <h2>Payment Request Api</h2>
         </div>
-        <p className="App-intro">
-          To get started, edit <code>src/App.js</code> and save to reload.
-        </p>
-        <button onClick={this.handlePaymentAction}>Payme Now!</button>
+        {window.PaymentRequest 
+          ? (<button className="button" onClick={this.handlePaymentAction}>Payme Now!</button>)
+          : (<p className="App-intro">Payment Web Api  <code>PaymentRequest</code> is not supported in this browser</p>) 
+        }
       </div>
     );
   }
