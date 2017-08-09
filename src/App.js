@@ -10,7 +10,9 @@ class App extends Component {
       item: 'Shiny Moonstone',
       tips: 0.2,
       shipping: 9999.99,
-      amount: 2.99
+      amount: 2.99,
+      response: null,
+      success: false
     };
     this.handlePaymentAction = this.handlePaymentAction.bind(this);
   }
@@ -39,27 +41,29 @@ class App extends Component {
           amount: { currency: 'EUR', value: totalAmount.toFixed(2) } 
         },
         shippingOptions: [{
-          id: 'spaceShip',
-          label: 'Space-Ship special delivery',
-          amount: { currency: 'EUR', value: this.state.shipping.toFixed(2) } ,
-          seleceted: true
+            id: 'space-ship',
+            label: 'Worldwide shipping directly from the moon!',
+            amount: { currency: 'EUR', value: this.state.shipping.toFixed(2) },
+            selected: true //optional
         }]
       };
       // Options
       const options = { requestShipping: true };
-
       const request = new PaymentRequest(methodData, details, options)
+
       request
         // Show a native Payment Request UI and handle the result
         .show()
         // Process the payment and let the ui respond to it
-        .then(function(paymentInfo) {
-          setTimeout(() => console.log(paymentInfo), 1000)
-          return Promise.resolve();
+        .then(paymentResponse => {
+          // Process paymentResponse here... 
+          this.setState({ success: true, response: paymentResponse });
+          setTimeout(() => paymentResponse.complete('success'), 1000);
         })
         .catch(function(error) {
           console.error(error);
         });
+
     } else {
       // Use your legacy checkout form...
       console.info('Use your legacy checkout form...');
@@ -67,6 +71,13 @@ class App extends Component {
   }
 
   render() {
+    let responseContent;
+
+    if (this.state.success) {
+      responseContent = JSON.stringify(this.state.response, undefined, 2);
+    }
+
+
     return (
       <div className="App">
         <div className="App-header">
@@ -76,6 +87,9 @@ class App extends Component {
           ? (<button className="button" onClick={this.handlePaymentAction}>Payme Now!</button>)
           : (<p className="App-intro">Payment Web Api  <code>PaymentRequest</code> is not supported in this browser</p>) 
         }
+        <pre id="json">
+          {responseContent}
+        </pre>
       </div>
     );
   }
